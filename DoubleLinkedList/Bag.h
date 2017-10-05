@@ -1,34 +1,41 @@
-#pragma once
-
+#ifndef BAG_H  
+#define BAG_H
 #include <cstdlib>
-#include <assert.h>
+#include <string>
+#include "DoubleLinkedList.h"
 
 using namespace std;
 
-typedef int value_type;
-typedef size_t size_type;
+
 
 class Bag
 {
 public:
-	static const size_t CAPACITY = 20;
+	typedef int value_type;
+	typedef size_t size_type;
 	Bag();
-	Bag(size_type init_capacity);
+	Bag(string name);
 	Bag(const Bag& source);
 	~Bag();
-	void insert(const value_type& entry);	// insert a new number in the bag
-	void reserve(size_type new_capacity);
+	// MODIFICATION MEMBER FUNCTIONS
 	bool erase_one(const value_type& target);
-	void remove();	// Removes one copy of a number
-	size_type size() const; // counts how many  intergers are in the bag
-	size_type occurrences(value_type target) const;	// Counts how many copies of a number occur
-	void operator=(const Bag& source);
-	void operator+=(const Bag& addend);
+	void insert(const value_type& entry);
+	void sort();
+	void operator +=(const Bag& addend);
+	void operator =(const Bag& source);
+	bool operator ==(const Bag& source);
+	// CONSTANT MEMBER FUNCTIONS
+	void show_content() const;
+	DoubleLinkedList *get_head_ptr() const { return head_ptr; }
+	size_type size() const { return many_nodes; }
+	size_type count(const value_type& target) const;
+	value_type grab() const;
 private:
-	value_type *data;
-	size_type used;
-	size_type capacity;
-
+	string name;
+	DoubleLinkedList *head_ptr;       // List head pointer 
+	size_type many_nodes; // Number of nodes on the list
 };
 
 Bag operator+(const Bag& b1, const Bag& b2);
+
+#endif

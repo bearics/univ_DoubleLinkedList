@@ -1,99 +1,178 @@
+#include <cassert>
+#include <cstdlib>
+#include <iostream>
 #include "Bag.h"
-
-
+#include "DoubleLinkedList.h"
 
 Bag::Bag()
 {
+	head_ptr = NULL;
+	many_nodes = 0;
 }
 
-Bag::Bag(size_type init_capacity)
+
+Bag::Bag(string name)
 {
-	data = new value_type[init_capacity];
-	capacity = init_capacity;
-	used = 0;
+	this->name = name;
 }
 
 Bag::Bag(const Bag& source)
 {
-	data = new value_type[source.capacity];
-	capacity = source.capacity;
-	used = source.used;
-	copy(source.data, source.data + used, data);
+	DoubleLinkedList *tail_ptr;
+
+	list_copy(source.head_ptr, head_ptr, tail_ptr);
+	many_nodes = source.many_nodes;
 }
 
 Bag::~Bag()
 {
-	delete[] data; 
+	list_clear(head_ptr);
+	many_nodes = 0;
 }
 
-void Bag::insert(const value_type& entry)	// insert a new number in the bag
+Bag::size_type Bag::count(const value_type& target) const
 {
-	if (used == capacity)
-		reserve(used + 1);
-	data[used++] = entry;
-}
+	size_type answer;
+	const DoubleLinkedList *cursor;
 
-void Bag::reserve(size_type new_capacity)
-{
-	value_type* larger_array;
-	if (new_capacity == capacity)
-		return;
-	if (new_capacity < used)
-		new_capacity = used;
-
-	larger_array = new value_type[new_capacity];
-	copy(data, data + used, larger_array);
-	delete[] data;
-	data = larger_array;
-	capacity = new_capacity;
+	answer = 0;
+	cursor = list_search(head_ptr, target);
+	while (cursor != NULL)
+	{
+		++answer;
+		cursor = cursor->next_link();
+		cursor = list_search(cursor, target);
+	}
+	return answer;
 }
 
 bool Bag::erase_one(const value_type& target)
 {
-	size_type index = 0;
-	while ((index < used) && (data[index] != target))
-		++index;
-	if (index == used)
+	DoubleLinkedList *target_ptr;
+
+	target_ptr = list_search(head_ptr, target);
+	if (target_ptr == NULL)
 		return false;
-	--used;
-	data[index] = data[used];
+	target_ptr->set_data(head_ptr->data());
+	list_head_remove(head_ptr);
+	--many_nodes;
 	return true;
 }
 
-void Bag::remove()
-{
 
-}
-
-void Bag::operator=(const Bag& source)
+void Bag::show_content() const
 {
-	value_type* new_data;
-	if (this == &source)
+	DoubleLinkedList *current_ptr = this->head_ptr;
+
+	if (current_ptr == NULL) {
+		cout << "No data in bag." << endl;
 		return;
-	if (capacity != source.capacity)
-	{
-		new_data = new value_type[source.capacity];
-		delete[] data;
-		data = new_data;
-		capacity = source.capacity;
 	}
-	used = source.used;
-	copy(source.data, source.data + used, data);
+
+	cout << "-------------------------*" << endl;
+	cout << "  head_ptr : " << current_ptr << endl;
+	cout << "-------------------------*" << endl;
+	while (1)
+	{ // print data list in bag
+		cout << "address  : " << current_ptr << endl;
+		cout << "prev_ptr : " << current_ptr->prev_link() << endl;
+		cout << "data     : " << current_ptr->data() << endl;
+		cout << "next_ptr : " << current_ptr->next_link() << endl;
+		cout << "-------------------------*" << endl;
+		if (current_ptr->next_link() == NULL)
+			break;
+		current_ptr = current_ptr->next_link();
+	}
+
+		
 }
 
-void Bag::operator+=(const Bag& addend)
+Bag::value_type Bag::grab() const
 {
-	if (used + addend.used > capacity)
-		reserve(used + addend.used);
-	copy(addend.data, addend.data + addend.used, data + used);
-	used += addend.used;
+	size_type i;
+	const DoubleLinkedList *cursor;
+
+	assert(size() > 0);
+	i = (rand() % size()) + 1;
+	cursor = list_locate(head_ptr, i);
+	return cursor->data();
+}
+
+void Bag::insert(const value_type& entry)
+{
+	list_head_insert(head_ptr, entry);
+	++many_nodes;
 }
 
 
-Bag operator+(const Bag& b1, const Bag& b2)
+void Bag::sort()
 {
-	Bag answer(b1.size() + b2.size());
+	DoubleLinkedList* tmp_ptr = head_ptr;
+	value_type* ptr = new value_type[many_nodes];
+	value_type temp = 0;
+	for (int i = 0; i < many_nodes; i++)
+	{
+		ptr[i] = tmp_ptr->data();
+		tmp_ptr = tmp_ptr->next_link();
+
+	}
+	for (int i = 0; i < many_nodes; i++)
+	{
+		for (int j = i + 1; j < many_nodes; j++)
+		{
+			if (ptr[j] >= ptr[i]) {
+				temp = ptr[i];
+				ptr[i] = ptr[j];
+				ptr[j] = temp;
+			}
+		}
+	}
+	list_clear(head_ptr);
+	for (int i = 0; i < many_nodes; i++)
+		list_head_insert(head_ptr, ptr[i]);
+}
+
+void Bag::operator +=(const Bag& addend)
+{
+	DoubleLinkedList *copy_head_ptr = head_ptr;
+	DoubleLinkedList *copy_tail_ptr = NULL;
+	if (copy_head_ptr != NULL){
+		while (copy_head_ptr->next_link() != NULL)
+			copy_head_ptr = copy_head_ptr->next_link();
+	}
+	if (addend.many_nodes > 0)
+	{
+		list_copy(addend.head_ptr, copy_head_ptr, copy_tail_ptr);
+		copy_tail_ptr->set_next_link(head_ptr);
+		head_ptr = copy_head_ptr;
+		many_nodes += addend.many_nodes;
+	}
+}
+
+void Bag::operator =(const Bag& source)
+{
+	DoubleLinkedList *tail_ptr;
+	if (this == &source) {
+		cout << "Already same." << endl;
+		return;
+	}
+	list_clear(head_ptr);
+	many_nodes = 0;
+	list_copy(source.head_ptr, head_ptr, tail_ptr);
+
+	many_nodes = source.many_nodes;
+}
+
+bool Bag::operator ==(const Bag& source)
+{
+	return this->head_ptr == source.head_ptr;
+}
+
+Bag operator +(const Bag& b1, const Bag& b2)
+{
+	Bag answer;
 	answer += b1;
 	answer += b2;
 	return answer;
-} 
+	
+}
